@@ -1,12 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { CartDrawer } from '@/components/cart/CartDrawer';
+import { HeroSection } from '@/components/home/HeroSection';
+import { CategoriesSection } from '@/components/home/CategoriesSection';
+import { FeaturedProducts } from '@/components/home/FeaturedProducts';
+import { PromoSection } from '@/components/home/PromoSection';
+import { TestimonialsSection } from '@/components/home/TestimonialsSection';
+import { FeaturesSection } from '@/components/home/FeaturesSection';
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <CartDrawer />
+      
+      <main>
+        <HeroSection />
+        <FeaturesSection />
+        <CategoriesSection />
+        <FeaturedProducts 
+          title="Trending Now"
+          subtitle="CURATED FOR YOU"
+          filter="featured"
+          limit={4}
+        />
+        <PromoSection />
+        <FeaturedProducts 
+          title="New Arrivals"
+          subtitle="FRESH OFF THE LOOM"
+          filter="new"
+          limit={4}
+        />
+        <TestimonialsSection />
+      </main>
+
+      <Footer />
     </div>
   );
 };
