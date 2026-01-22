@@ -1,25 +1,86 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/useAuth';
+import { loginSchema, registerSchema, LoginFormData, RegisterFormData } from '@/lib/validations';
+import { toast } from 'sonner';
 
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, signIn, signUp, signInWithGoogle, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const from = (location.state as { from?: Location })?.from?.pathname || '/';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate(from, { replace: true });
+    }
+  }, [user, authLoading, navigate, from]);
+
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  const registerForm = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { fullName: '', email: '', password: '' },
+  });
+
+  const handleLogin = async (data: LoginFormData) => {
+    const { error } = await signIn(data.email, data.password);
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        toast.error('Invalid email or password');
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.success('Welcome back!');
+      navigate(from, { replace: true });
+    }
   };
+
+  const handleRegister = async (data: RegisterFormData) => {
+    const { error } = await signUp(data.email, data.password, data.fullName);
+    if (error) {
+      if (error.message.includes('already registered')) {
+        toast.error('This email is already registered. Please sign in.');
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.success('Account created successfully! Welcome to Vastra Boutique.');
+      navigate(from, { replace: true });
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast.error('Failed to sign in with Google');
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,7 +108,7 @@ export default function AuthPage() {
 
               {/* Login Form */}
               <TabsContent value="login">
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
                     <div className="relative">
@@ -57,9 +118,12 @@ export default function AuthPage() {
                         type="email"
                         placeholder="you@example.com"
                         className="pl-10"
-                        required
+                        {...loginForm.register('email')}
                       />
                     </div>
+                    {loginForm.formState.errors.email && (
+                      <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -79,7 +143,7 @@ export default function AuthPage() {
                         type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
                         className="pl-10 pr-10"
-                        required
+                        {...loginForm.register('password')}
                       />
                       <button
                         type="button"
@@ -93,11 +157,27 @@ export default function AuthPage() {
                         )}
                       </button>
                     </div>
+                    {loginForm.formState.errors.password && (
+                      <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>
+                    )}
                   </div>
 
-                  <Button type="submit" className="w-full btn-hero" disabled={isLoading}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                  <Button 
+                    type="submit" 
+                    className="w-full btn-hero" 
+                    disabled={loginForm.formState.isSubmitting}
+                  >
+                    {loginForm.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        Sign In
+                        <ArrowRight className="ml-2 h-5 w-5" />
+                      </>
+                    )}
                   </Button>
                 </form>
 
@@ -112,7 +192,12 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                <Button variant="outline" className="w-full" type="button">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                >
                   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
                     <path
                       fill="currentColor"
@@ -137,7 +222,7 @@ export default function AuthPage() {
 
               {/* Register Form */}
               <TabsContent value="register">
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="register-name">Full Name</Label>
                     <div className="relative">
@@ -145,11 +230,14 @@ export default function AuthPage() {
                       <Input
                         id="register-name"
                         type="text"
-                        placeholder="John Doe"
+                        placeholder="Your Name"
                         className="pl-10"
-                        required
+                        {...registerForm.register('fullName')}
                       />
                     </div>
+                    {registerForm.formState.errors.fullName && (
+                      <p className="text-sm text-destructive">{registerForm.formState.errors.fullName.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -161,9 +249,12 @@ export default function AuthPage() {
                         type="email"
                         placeholder="you@example.com"
                         className="pl-10"
-                        required
+                        {...registerForm.register('email')}
                       />
                     </div>
+                    {registerForm.formState.errors.email && (
+                      <p className="text-sm text-destructive">{registerForm.formState.errors.email.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -175,7 +266,7 @@ export default function AuthPage() {
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Create a password"
                         className="pl-10 pr-10"
-                        required
+                        {...registerForm.register('password')}
                       />
                       <button
                         type="button"
@@ -189,14 +280,30 @@ export default function AuthPage() {
                         )}
                       </button>
                     </div>
+                    {registerForm.formState.errors.password && (
+                      <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Must be at least 8 characters
                     </p>
                   </div>
 
-                  <Button type="submit" className="w-full btn-hero" disabled={isLoading}>
-                    {isLoading ? 'Creating account...' : 'Create Account'}
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                  <Button 
+                    type="submit" 
+                    className="w-full btn-hero" 
+                    disabled={registerForm.formState.isSubmitting}
+                  >
+                    {registerForm.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : (
+                      <>
+                        Create Account
+                        <ArrowRight className="ml-2 h-5 w-5" />
+                      </>
+                    )}
                   </Button>
                 </form>
 
@@ -211,7 +318,12 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                <Button variant="outline" className="w-full" type="button">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                >
                   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
                     <path
                       fill="currentColor"
