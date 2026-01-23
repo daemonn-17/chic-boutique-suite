@@ -107,7 +107,7 @@ export default function CheckoutPage() {
         couponCode: coupon?.code,
       },
       (orderNumber) => {
-        navigate(`/orders?success=${orderNumber}`);
+        navigate(`/order-success?order=${orderNumber}`);
       },
       (error) => {
         toast.error(error);

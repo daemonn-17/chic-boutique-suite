@@ -12,6 +12,8 @@ import Wishlist from "./pages/Wishlist";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
+import OrderDetail from "./pages/OrderDetail";
+import OrderSuccess from "./pages/OrderSuccess";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 
@@ -43,6 +45,16 @@ const App = () => (
             <Route path="/orders" element={
               <ProtectedRoute>
                 <Orders />
+              </ProtectedRoute>
+            } />
+            <Route path="/orders/:orderId" element={
+              <ProtectedRoute>
+                <OrderDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/order-success" element={
+              <ProtectedRoute>
+                <OrderSuccess />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
