@@ -26,6 +26,7 @@ import { useCartStore } from '@/store/cartStore';
 import { useAddresses, Address } from '@/hooks/useAddresses';
 import { useCheckout } from '@/hooks/useCheckout';
 import { formatPrice } from '@/hooks/useProducts';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -67,25 +68,39 @@ export default function CheckoutPage() {
     setCouponError('');
     setIsApplyingCoupon(true);
     
-    // Mock coupon validation for cart display
-    // The actual validation happens in the edge function
-    const validCoupons: Record<string, { discount: number; type: 'percentage' | 'fixed' }> = {
-      'WELCOME10': { discount: 10, type: 'percentage' },
-      'FESTIVE20': { discount: 20, type: 'percentage' },
-      'FLAT500': { discount: 50000, type: 'fixed' }, // 500 in paise
-    };
+    try {
+      // Call the real validate_coupon RPC function
+      const { data, error } = await supabase.rpc('validate_coupon', {
+        p_code: couponCode.trim().toUpperCase(),
+        p_subtotal: subtotal,
+      });
 
-    setTimeout(() => {
-      const foundCoupon = validCoupons[couponCode.toUpperCase()];
-      if (foundCoupon) {
-        applyCoupon({ code: couponCode.toUpperCase(), ...foundCoupon });
-        setCouponCode('');
-        toast.success('Coupon applied successfully!');
-      } else {
-        setCouponError('Invalid coupon code');
+      if (error) {
+        console.error('Coupon validation error:', error);
+        setCouponError('Failed to validate coupon');
+        return;
       }
+
+      const result = data?.[0];
+      
+      if (result?.valid) {
+        // Calculate discount type based on the coupon data
+        applyCoupon({ 
+          code: couponCode.toUpperCase(), 
+          discount: result.discount,
+          type: 'fixed', // The RPC returns calculated discount amount
+        });
+        setCouponCode('');
+        toast.success(result.message || 'Coupon applied successfully!');
+      } else {
+        setCouponError(result?.message || 'Invalid coupon code');
+      }
+    } catch (err) {
+      console.error('Coupon error:', err);
+      setCouponError('Failed to validate coupon');
+    } finally {
       setIsApplyingCoupon(false);
-    }, 500);
+    }
   };
 
   const handlePlaceOrder = () => {
