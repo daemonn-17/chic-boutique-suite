@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Minus, Trash2, ShoppingBag, Tag } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingBag, Tag, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCartStore } from '@/store/cartStore';
-import { formatPrice } from '@/data/mockProducts';
+import { formatPrice } from '@/hooks/useProducts';
+import { supabase } from '@/integrations/supabase/client';
 
 export function CartDrawer() {
   const {
@@ -24,29 +25,56 @@ export function CartDrawer() {
 
   const [couponCode, setCouponCode] = useState('');
   const [couponError, setCouponError] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
     setCouponError('');
-    // Mock coupon validation
-    const validCoupons: Record<string, { discount: number; type: 'percentage' | 'fixed' }> = {
-      'FIRST10': { discount: 10, type: 'percentage' },
-      'FLAT500': { discount: 500, type: 'fixed' },
-      'SAVE20': { discount: 20, type: 'percentage' },
-    };
+    setIsApplyingCoupon(true);
+    
+    try {
+      const subtotal = getSubtotal();
+      
+      // Call the real validate_coupon RPC function
+      const { data, error } = await supabase.rpc('validate_coupon', {
+        p_code: couponCode.trim().toUpperCase(),
+        p_subtotal: subtotal,
+      });
 
-    const foundCoupon = validCoupons[couponCode.toUpperCase()];
-    if (foundCoupon) {
-      applyCoupon({ code: couponCode.toUpperCase(), ...foundCoupon });
-      setCouponCode('');
-    } else {
-      setCouponError('Invalid coupon code');
+      if (error) {
+        console.error('Coupon validation error:', error);
+        setCouponError('Failed to validate coupon');
+        return;
+      }
+
+      const result = data?.[0];
+      
+      if (result?.valid) {
+        applyCoupon({ 
+          code: couponCode.toUpperCase(), 
+          discount: result.discount,
+          type: 'fixed', // The RPC returns calculated discount amount
+        });
+        setCouponCode('');
+      } else {
+        setCouponError(result?.message || 'Invalid coupon code');
+      }
+    } catch (err) {
+      console.error('Coupon error:', err);
+      setCouponError('Failed to validate coupon');
+    } finally {
+      setIsApplyingCoupon(false);
     }
   };
 
   const subtotal = getSubtotal();
   const discount = getDiscount();
   const total = getTotal();
-  const shipping = subtotal >= 2999 ? 0 : 199;
+  const shipping = subtotal >= 299900 ? 0 : 19900; // In paise: ₹2999 free shipping, ₹199 otherwise
 
   return (
     <AnimatePresence>
@@ -205,9 +233,18 @@ export function CartDrawer() {
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
                         className="flex-1"
+                        disabled={isApplyingCoupon}
                       />
-                      <Button variant="outline" onClick={handleApplyCoupon}>
-                        Apply
+                      <Button 
+                        variant="outline" 
+                        onClick={handleApplyCoupon}
+                        disabled={isApplyingCoupon}
+                      >
+                        {isApplyingCoupon ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Apply'
+                        )}
                       </Button>
                     </div>
                   )}
@@ -234,7 +271,7 @@ export function CartDrawer() {
                   </div>
                   {shipping > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Add {formatPrice(2999 - subtotal)} more for free shipping
+                      Add {formatPrice(299900 - subtotal)} more for free shipping
                     </p>
                   )}
                   <div className="flex justify-between font-semibold text-lg pt-3 border-t border-border">

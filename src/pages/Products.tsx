@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, X, Loader2 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/cart/CartDrawer';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -24,7 +25,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { products, categories, formatPrice } from '@/data/mockProducts';
+import { useProducts, useCategories, formatPrice } from '@/hooks/useProducts';
+import { transformDbProduct, transformDbCategory } from '@/lib/productUtils';
 import { SortOption } from '@/types/product';
 
 const sortOptions: { value: SortOption; label: string }[] = [
@@ -35,6 +37,7 @@ const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'rating', label: 'Highest Rated' },
 ];
 
+// Common filter options - these could also come from DB
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 const materials = ['Pure Silk', 'Georgette', 'Cotton', 'Velvet', 'Chanderi Silk', 'Silk Blend'];
 
@@ -45,56 +48,58 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>(
     searchParams.get('category') || ''
   );
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]); // In paise
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [onlyDiscounted, setOnlyDiscounted] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
+  // Fetch categories from database
+  const { data: dbCategories, isLoading: categoriesLoading } = useCategories();
+  const categories = useMemo(() => 
+    (dbCategories || []).map(transformDbCategory), 
+    [dbCategories]
+  );
+
+  // Map sort options to database format
+  const dbSortBy = useMemo(() => {
+    switch (sortBy) {
+      case 'price-low-high': return 'price_asc';
+      case 'price-high-low': return 'price_desc';
+      case 'popular': return 'popular';
+      default: return 'newest';
+    }
+  }, [sortBy]);
+
+  // Fetch products with filters from database
+  const { data: productsData, isLoading: productsLoading } = useProducts({
+    category: selectedCategory || undefined,
+    minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+    maxPrice: priceRange[1] < 10000000 ? priceRange[1] : undefined,
+    discountOnly: onlyDiscounted || undefined,
+    search: search || undefined,
+    sortBy: dbSortBy,
+    limit: 50,
+  });
+
+  // Transform and filter products
   const filteredProducts = useMemo(() => {
-    let result = [...products];
+    if (!productsData?.products) return [];
+    
+    let result = productsData.products.map(transformDbProduct);
 
-    // Search filter
-    if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
-          p.description.toLowerCase().includes(searchLower) ||
-          p.tags.some((t) => t.toLowerCase().includes(searchLower))
-      );
-    }
-
-    // Category filter
-    if (selectedCategory) {
-      result = result.filter(
-        (p) => p.categoryName.toLowerCase() === selectedCategory.toLowerCase()
-      );
-    }
-
-    // Price filter
-    result = result.filter((p) => {
-      const price = p.discountPrice || p.price;
-      return price >= priceRange[0] && price <= priceRange[1];
-    });
-
-    // Size filter
+    // Apply client-side size filter (not in DB query yet)
     if (selectedSizes.length > 0) {
       result = result.filter((p) =>
         p.sizes.some((s) => selectedSizes.includes(s))
       );
     }
 
-    // Material filter
+    // Apply client-side material filter
     if (selectedMaterials.length > 0) {
       result = result.filter(
         (p) => p.material && selectedMaterials.includes(p.material)
       );
-    }
-
-    // Discount filter
-    if (onlyDiscounted) {
-      result = result.filter((p) => p.discountPrice);
     }
 
     // URL filter param
@@ -103,39 +108,25 @@ export default function ProductsPage() {
       result = result.filter((p) => p.isNewArrival);
     }
 
-    // Sort
-    switch (sortBy) {
-      case 'price-low-high':
-        result.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
-        break;
-      case 'price-high-low':
-        result.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
-        break;
-      case 'popular':
-        result.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-        break;
-      case 'rating':
-        result.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
-        break;
-      case 'newest':
-      default:
-        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Client-side rating sort (not in DB)
+    if (sortBy === 'rating') {
+      result.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
     }
 
     return result;
-  }, [search, selectedCategory, priceRange, selectedSizes, selectedMaterials, onlyDiscounted, sortBy, searchParams]);
+  }, [productsData, selectedSizes, selectedMaterials, searchParams, sortBy]);
 
   const activeFiltersCount = [
     selectedCategory,
     selectedSizes.length > 0,
     selectedMaterials.length > 0,
     onlyDiscounted,
-    priceRange[0] > 0 || priceRange[1] < 100000,
+    priceRange[0] > 0 || priceRange[1] < 10000000,
   ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSelectedCategory('');
-    setPriceRange([0, 100000]);
+    setPriceRange([0, 10000000]);
     setSelectedSizes([]);
     setSelectedMaterials([]);
     setOnlyDiscounted(false);
@@ -147,27 +138,32 @@ export default function ProductsPage() {
       {/* Categories */}
       <div>
         <h4 className="font-serif font-semibold mb-4">Category</h4>
-        <div className="space-y-2">
-          {categories.map((category) => (
-            <label
-              key={category.id}
-              className="flex items-center gap-3 cursor-pointer group"
-            >
-              <Checkbox
-                checked={selectedCategory.toLowerCase() === category.slug}
-                onCheckedChange={(checked) =>
-                  setSelectedCategory(checked ? category.slug : '')
-                }
-              />
-              <span className="text-sm group-hover:text-primary transition-colors">
-                {category.name}
-              </span>
-              <span className="text-xs text-muted-foreground ml-auto">
-                ({category.productCount})
-              </span>
-            </label>
-          ))}
-        </div>
+        {categoriesLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-6 w-full" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {categories.map((category) => (
+              <label
+                key={category.id}
+                className="flex items-center gap-3 cursor-pointer group"
+              >
+                <Checkbox
+                  checked={selectedCategory.toLowerCase() === category.slug}
+                  onCheckedChange={(checked) =>
+                    setSelectedCategory(checked ? category.slug : '')
+                  }
+                />
+                <span className="text-sm group-hover:text-primary transition-colors">
+                  {category.name}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Price Range */}
@@ -178,8 +174,8 @@ export default function ProductsPage() {
             value={priceRange}
             onValueChange={(value) => setPriceRange(value as [number, number])}
             min={0}
-            max={100000}
-            step={1000}
+            max={10000000}
+            step={100000}
             className="mb-4"
           />
           <div className="flex items-center justify-between text-sm">
@@ -332,7 +328,11 @@ export default function ProductsPage() {
 
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
-                {filteredProducts.length} products
+                {productsLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin inline" />
+                ) : (
+                  `${filteredProducts.length} products`
+                )}
               </span>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
                 <SelectTrigger className="w-48">
@@ -394,7 +394,17 @@ export default function ProductsPage() {
 
             {/* Products Grid */}
             <div className="flex-1">
-              {filteredProducts.length === 0 ? (
+              {productsLoading ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="space-y-4">
+                      <Skeleton className="aspect-[3/4] rounded-xl" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredProducts.length === 0 ? (
                 <div className="text-center py-16">
                   <h3 className="font-serif text-xl mb-2">No products found</h3>
                   <p className="text-muted-foreground mb-4">

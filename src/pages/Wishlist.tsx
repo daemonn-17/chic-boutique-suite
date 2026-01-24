@@ -7,22 +7,22 @@ import { CartDrawer } from '@/components/cart/CartDrawer';
 import { Button } from '@/components/ui/button';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useCartStore } from '@/store/cartStore';
-import { formatPrice, products } from '@/data/mockProducts';
+import { formatPrice } from '@/hooks/useProducts';
 
 export default function WishlistPage() {
   const { items, removeItem, clearWishlist } = useWishlistStore();
   const { addItem, openCart } = useCartStore();
 
   const handleAddToCart = (item: typeof items[0]) => {
-    const product = products.find(p => p.id === item.productId);
+    // Add to cart with default size/color from wishlist item
     addItem({
       productId: item.productId,
       name: item.name,
       price: item.price,
       discountPrice: item.discountPrice,
       image: item.image,
-      size: product?.sizes[0],
-      color: product?.colors[0],
+      size: undefined, // User can select on product page or cart
+      color: undefined,
       quantity: 1,
     });
     removeItem(item.productId);

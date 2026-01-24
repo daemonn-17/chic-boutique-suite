@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -13,20 +13,35 @@ import {
   Minus,
   Plus,
   Share2,
+  Loader2,
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Button } from '@/components/ui/button';
-import { products, formatPrice } from '@/data/mockProducts';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useProduct, useSimilarProducts, formatPrice } from '@/hooks/useProducts';
+import { transformDbProduct } from '@/lib/productUtils';
+import { getColorHex } from '@/lib/productUtils';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { cn } from '@/lib/utils';
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
-  const product = products.find((p) => p.slug === slug);
+  
+  // Fetch product from database
+  const { data: dbProduct, isLoading, error } = useProduct(slug || '');
+  const product = dbProduct ? transformDbProduct(dbProduct) : null;
+
+  // Fetch similar products
+  const { data: dbSimilarProducts } = useSimilarProducts(
+    dbProduct?.category_id || null,
+    dbProduct?.id || '',
+    4
+  );
+  const similarProducts = (dbSimilarProducts || []).map(transformDbProduct);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -38,14 +53,32 @@ export default function ProductDetailPage() {
 
   const isWishlisted = product ? isInWishlist(product.id) : false;
 
-  const similarProducts = useMemo(() => {
-    if (!product) return [];
-    return products
-      .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
-      .slice(0, 4);
-  }, [product]);
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="section-padding">
+          <div className="container-boutique">
+            <div className="grid lg:grid-cols-2 gap-12">
+              <Skeleton className="aspect-[3/4] rounded-xl" />
+              <div className="space-y-6">
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-12 w-2/3" />
+                <Skeleton className="h-6 w-1/4" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
-  if (!product) {
+  // Error or not found state
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -105,35 +138,6 @@ export default function ProductDetailPage() {
     );
   };
 
-  const getColorHex = (colorName: string): string => {
-    const colors: Record<string, string> = {
-      'maroon': '#800000',
-      'royal blue': '#4169E1',
-      'emerald green': '#50C878',
-      'dusty pink': '#D4A5A5',
-      'sage green': '#9DC183',
-      'powder blue': '#B0E0E6',
-      'deep red': '#8B0000',
-      'royal magenta': '#8B008B',
-      'midnight black': '#191970',
-      'champagne gold': '#F7E7CE',
-      'wine': '#722F37',
-      'off white': '#FAF9F6',
-      'peach': '#FFDAB9',
-      'sky blue': '#87CEEB',
-      'white': '#FFFFFF',
-      'light pink': '#FFB6C1',
-      'mint green': '#98FF98',
-      'black': '#000000',
-      'navy blue': '#000080',
-      'burgundy': '#800020',
-      'gold with green': '#DAA520',
-      'gold with red': '#DAA520',
-      'gold with blue': '#DAA520',
-    };
-    return colors[colorName.toLowerCase()] || '#888888';
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -170,11 +174,17 @@ export default function ProductDetailPage() {
             >
               {/* Main Image */}
               <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-muted">
-                <img
-                  src={product.images[selectedImageIndex]?.url}
-                  alt={product.images[selectedImageIndex]?.alt}
-                  className="w-full h-full object-cover"
-                />
+                {product.images.length > 0 ? (
+                  <img
+                    src={product.images[selectedImageIndex]?.url}
+                    alt={product.images[selectedImageIndex]?.alt || product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    No image available
+                  </div>
+                )}
 
                 {/* Navigation Arrows */}
                 {product.images.length > 1 && (
@@ -243,7 +253,7 @@ export default function ProductDetailPage() {
                   {product.name}
                 </h1>
 
-                {product.averageRating && (
+                {product.averageRating && product.averageRating > 0 && (
                   <div className="flex items-center gap-3">
                     <div className="flex">
                       {[...Array(5)].map((_, i) => (
