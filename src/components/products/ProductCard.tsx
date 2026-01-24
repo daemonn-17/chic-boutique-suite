@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/types/product';
-import { formatPrice } from '@/data/mockProducts';
+import { formatPrice } from '@/hooks/useProducts';
+import { getColorHex } from '@/lib/productUtils';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { cn } from '@/lib/utils';
@@ -62,7 +63,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-muted">
           <img
-            src={primaryImage?.url}
+            src={primaryImage?.url || '/placeholder.svg'}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
@@ -121,7 +122,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           </h3>
 
           {/* Rating */}
-          {product.averageRating && (
+          {product.averageRating && product.averageRating > 0 && (
             <div className="flex items-center gap-1">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
@@ -169,50 +170,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                   key={color}
                   className="w-4 h-4 rounded-full border border-border"
                   title={color}
-                  style={{
-                    backgroundColor:
-                      color.toLowerCase() === 'maroon'
-                        ? '#800000'
-                        : color.toLowerCase() === 'royal blue'
-                        ? '#4169E1'
-                        : color.toLowerCase() === 'emerald green'
-                        ? '#50C878'
-                        : color.toLowerCase() === 'dusty pink'
-                        ? '#D4A5A5'
-                        : color.toLowerCase() === 'sage green'
-                        ? '#9DC183'
-                        : color.toLowerCase() === 'powder blue'
-                        ? '#B0E0E6'
-                        : color.toLowerCase() === 'deep red'
-                        ? '#8B0000'
-                        : color.toLowerCase() === 'royal magenta'
-                        ? '#8B008B'
-                        : color.toLowerCase() === 'midnight black'
-                        ? '#191970'
-                        : color.toLowerCase() === 'champagne gold'
-                        ? '#F7E7CE'
-                        : color.toLowerCase() === 'wine'
-                        ? '#722F37'
-                        : color.toLowerCase() === 'off white'
-                        ? '#FAF9F6'
-                        : color.toLowerCase() === 'peach'
-                        ? '#FFDAB9'
-                        : color.toLowerCase() === 'sky blue'
-                        ? '#87CEEB'
-                        : color.toLowerCase() === 'white'
-                        ? '#FFFFFF'
-                        : color.toLowerCase() === 'light pink'
-                        ? '#FFB6C1'
-                        : color.toLowerCase() === 'mint green'
-                        ? '#98FF98'
-                        : color.toLowerCase() === 'black'
-                        ? '#000000'
-                        : color.toLowerCase() === 'navy blue'
-                        ? '#000080'
-                        : color.toLowerCase() === 'burgundy'
-                        ? '#800020'
-                        : '#888888',
-                  }}
+                  style={{ backgroundColor: getColorHex(color) }}
                 />
               ))}
               {product.colors.length > 4 && (
