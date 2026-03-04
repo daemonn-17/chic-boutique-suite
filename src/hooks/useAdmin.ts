@@ -288,17 +288,75 @@ export function useDeleteProductImage() {
   });
 }
 
-// ─── Categories (for form dropdown) ───
+// ─── Categories (full admin view) ───
 export function useAdminCategories() {
   return useQuery({
     queryKey: ['admin-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, slug')
+        .select('*')
         .order('display_order');
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export interface CategoryFormData {
+  name: string;
+  slug: string;
+  description: string;
+  image_url: string;
+  display_order: number;
+  is_active: boolean;
+}
+
+export function useCreateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: CategoryFormData) => {
+      const { error } = await supabase.from('categories').insert({
+        name: data.name,
+        slug: data.slug,
+        description: data.description || null,
+        image_url: data.image_url || null,
+        display_order: data.display_order,
+        is_active: data.is_active,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-categories'] });
+    },
+  });
+}
+
+export function useUpdateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<CategoryFormData> }) => {
+      const { error } = await supabase
+        .from('categories')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-categories'] });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-categories'] });
     },
   });
 }
