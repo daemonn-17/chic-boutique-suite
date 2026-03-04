@@ -146,6 +146,163 @@ export function useToggleProductActive() {
   });
 }
 
+// ─── Create Product ───
+export interface ProductFormData {
+  name: string;
+  slug: string;
+  sku: string;
+  description: string;
+  price: number;
+  discount_price: number | null;
+  stock_qty: number;
+  category_id: string | null;
+  colors: string[];
+  sizes: string[];
+  material: string;
+  pattern: string;
+  brand: string;
+  tags: string[];
+  is_featured: boolean;
+  is_new_arrival: boolean;
+  is_active: boolean;
+}
+
+export function useCreateProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: ProductFormData) => {
+      const { data: product, error } = await supabase
+        .from('products')
+        .insert({
+          name: data.name,
+          slug: data.slug,
+          sku: data.sku,
+          description: data.description || null,
+          price: data.price,
+          discount_price: data.discount_price,
+          stock_qty: data.stock_qty,
+          category_id: data.category_id,
+          colors: data.colors,
+          sizes: data.sizes,
+          material: data.material || null,
+          pattern: data.pattern || null,
+          brand: data.brand || null,
+          tags: data.tags,
+          is_featured: data.is_featured,
+          is_new_arrival: data.is_new_arrival,
+          is_active: data.is_active,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return product;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+      qc.invalidateQueries({ queryKey: ['admin-stats'] });
+    },
+  });
+}
+
+// ─── Update Product ───
+export function useUpdateProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<ProductFormData> }) => {
+      const { error } = await supabase
+        .from('products')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+      qc.invalidateQueries({ queryKey: ['admin-stats'] });
+    },
+  });
+}
+
+// ─── Delete Product ───
+export function useDeleteProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (productId: string) => {
+      const { error } = await supabase.from('products').delete().eq('id', productId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+      qc.invalidateQueries({ queryKey: ['admin-stats'] });
+    },
+  });
+}
+
+// ─── Upload Product Image ───
+export function useUploadProductImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ productId, file, isPrimary = false, displayOrder = 0 }: {
+      productId: string; file: File; isPrimary?: boolean; displayOrder?: number;
+    }) => {
+      const ext = file.name.split('.').pop();
+      const path = `${productId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(path, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(path);
+
+      const { error: dbError } = await supabase.from('product_images').insert({
+        product_id: productId,
+        url: publicUrl,
+        public_id: path,
+        is_primary: isPrimary,
+        display_order: displayOrder,
+      });
+      if (dbError) throw dbError;
+      return publicUrl;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+  });
+}
+
+// ─── Delete Product Image ───
+export function useDeleteProductImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ imageId, publicId }: { imageId: string; publicId: string | null }) => {
+      if (publicId) {
+        await supabase.storage.from('product-images').remove([publicId]);
+      }
+      const { error } = await supabase.from('product_images').delete().eq('id', imageId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+  });
+}
+
+// ─── Categories (for form dropdown) ───
+export function useAdminCategories() {
+  return useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .order('display_order');
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 // ─── Inventory (low stock focus) ───
 export function useInventory() {
   return useQuery({

@@ -1,23 +1,28 @@
 import { useState } from 'react';
-import { useAdminProducts, useToggleProductActive, useUpdateStock } from '@/hooks/useAdmin';
+import { useAdminProducts, useToggleProductActive, useUpdateStock, useDeleteProduct } from '@/hooks/useAdmin';
 import { formatPrice } from '@/hooks/useProducts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Package } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Search, Package, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import ProductFormDialog from '@/components/admin/ProductFormDialog';
 
 export default function AdminProducts() {
   const { data: products, isLoading } = useAdminProducts();
   const toggleActive = useToggleProductActive();
   const updateStock = useUpdateStock();
+  const deleteProduct = useDeleteProduct();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [editingStock, setEditingStock] = useState<Record<string, number>>({});
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
 
   const filtered = products?.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,6 +46,16 @@ export default function AdminProducts() {
     });
   };
 
+  const handleDelete = (id: string) => {
+    deleteProduct.mutate(id, {
+      onSuccess: () => toast({ title: 'Product deleted' }),
+      onError: (err: any) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+    });
+  };
+
+  const openCreate = () => { setEditingProduct(null); setFormOpen(true); };
+  const openEdit = (p: any) => { setEditingProduct(p); setFormOpen(true); };
+
   const getImage = (p: any) => {
     const primary = p.product_images?.find((i: any) => i.is_primary);
     return primary?.url || p.product_images?.[0]?.url || '/placeholder.svg';
@@ -60,9 +75,14 @@ export default function AdminProducts() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="heading-section">Products ({filtered.length})</h1>
-        <div className="relative max-w-sm w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name or SKU..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="flex gap-3 items-center">
+          <div className="relative max-w-sm w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search by name or SKU..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <Button onClick={openCreate} className="gap-2">
+            <Plus className="h-4 w-4" /> Add Product
+          </Button>
         </div>
       </div>
 
@@ -128,6 +148,28 @@ export default function AdminProducts() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(p)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete "{p.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>This action cannot be undone. This will permanently delete the product and its images.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(p.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       {p.is_featured && <Badge className="text-xs bg-accent text-accent-foreground">Featured</Badge>}
                       {p.is_new_arrival && <Badge className="text-xs">New</Badge>}
                     </div>
@@ -146,6 +188,8 @@ export default function AdminProducts() {
           </Table>
         </CardContent>
       </Card>
+
+      <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editingProduct} />
     </div>
   );
 }
