@@ -378,6 +378,26 @@ export function useReorderCategories() {
   });
 }
 
+// ─── Upload Category Image ───
+export function useUploadCategoryImage() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const ext = file.name.split('.').pop();
+      const path = `categories/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(path, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(path);
+
+      return publicUrl;
+    },
+  });
+}
+
 // ─── Inventory (low stock focus) ───
 export function useInventory() {
   return useQuery({
