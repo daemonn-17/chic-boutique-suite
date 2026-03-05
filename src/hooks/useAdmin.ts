@@ -361,6 +361,23 @@ export function useDeleteCategory() {
   });
 }
 
+export function useReorderCategories() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderedIds: { id: string; display_order: number }[]) => {
+      const updates = orderedIds.map(({ id, display_order }) =>
+        supabase.from('categories').update({ display_order }).eq('id', id)
+      );
+      const results = await Promise.all(updates);
+      const failed = results.find(r => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-categories'] });
+    },
+  });
+}
+
 // ─── Inventory (low stock focus) ───
 export function useInventory() {
   return useQuery({

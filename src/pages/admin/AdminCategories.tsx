@@ -4,6 +4,7 @@ import {
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
+  useReorderCategories,
   type CategoryFormData,
 } from '@/hooks/useAdmin';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,8 +18,27 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, FolderOpen } from 'lucide-react';
+import { Plus, Pencil, Trash2, FolderOpen, GripVertical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import type { Tables } from '@/integrations/supabase/types';
 
 function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -33,19 +53,102 @@ const EMPTY_FORM: CategoryFormData = {
   is_active: true,
 };
 
+type Category = Tables<'categories'>;
+
+function SortableRow({
+  category,
+  onEdit,
+  onDelete,
+}: {
+  category: Category;
+  onEdit: (c: Category) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: category.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell>
+        <button className="cursor-grab active:cursor-grabbing touch-none p-1" {...attributes} {...listeners}>
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </TableCell>
+      <TableCell>
+        {category.image_url ? (
+          <img src={category.image_url} alt={category.name} className="w-12 h-12 rounded object-cover" />
+        ) : (
+          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+            <FolderOpen className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="font-medium">{category.name}</TableCell>
+      <TableCell className="text-muted-foreground text-xs font-mono">{category.slug}</TableCell>
+      <TableCell>{category.display_order}</TableCell>
+      <TableCell>
+        <Badge variant={category.is_active ? 'default' : 'secondary'}>
+          {category.is_active ? 'Active' : 'Inactive'}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onEdit(category)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete "{category.name}"?</AlertDialogTitle>
+                <AlertDialogDescription>Products in this category will become uncategorized.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(category.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export default function AdminCategories() {
   const { data: categories, isLoading } = useAdminCategories();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
+  const reorderCategories = useReorderCategories();
   const { toast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [form, setForm] = useState<CategoryFormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
 
   const isEdit = !!editingCategory;
+
+  useEffect(() => {
+    if (categories) {
+      setOrderedCategories(categories);
+    }
+  }, [categories]);
 
   useEffect(() => {
     if (formOpen && editingCategory) {
@@ -61,6 +164,27 @@ export default function AdminCategories() {
       setForm({ ...EMPTY_FORM, display_order: (categories?.length || 0) });
     }
   }, [formOpen, editingCategory, categories]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderedCategories.findIndex(c => c.id === active.id);
+    const newIndex = orderedCategories.findIndex(c => c.id === over.id);
+    const reordered = arrayMove(orderedCategories, oldIndex, newIndex);
+    setOrderedCategories(reordered);
+
+    const updates = reordered.map((c, i) => ({ id: c.id, display_order: i }));
+    reorderCategories.mutate(updates, {
+      onSuccess: () => toast({ title: 'Order updated' }),
+      onError: (err: any) => toast({ title: 'Error reordering', description: err.message, variant: 'destructive' }),
+    });
+  };
 
   const updateField = <K extends keyof CategoryFormData>(key: K, value: CategoryFormData[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -111,7 +235,7 @@ export default function AdminCategories() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="heading-section">Categories ({categories?.length || 0})</h1>
+        <h1 className="heading-section">Categories ({orderedCategories.length})</h1>
         <Button onClick={() => { setEditingCategory(null); setFormOpen(true); }} className="gap-2">
           <Plus className="h-4 w-4" /> Add Category
         </Button>
@@ -122,6 +246,7 @@ export default function AdminCategories() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10" />
                 <TableHead className="w-16">Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Slug</TableHead>
@@ -130,68 +255,37 @@ export default function AdminCategories() {
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {categories?.map(c => (
-                <TableRow key={c.id}>
-                  <TableCell>
-                    {c.image_url ? (
-                      <img src={c.image_url} alt={c.name} className="w-12 h-12 rounded object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
-                        <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-muted-foreground text-xs font-mono">{c.slug}</TableCell>
-                  <TableCell>{c.display_order}</TableCell>
-                  <TableCell>
-                    <Badge variant={c.is_active ? 'default' : 'secondary'}>
-                      {c.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditingCategory(c); setFormOpen(true); }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete "{c.name}"?</AlertDialogTitle>
-                            <AlertDialogDescription>Products in this category will become uncategorized.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {(!categories || categories.length === 0) && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                    <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    No categories yet
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              modifiers={[restrictToVerticalAxis]}
+            >
+              <SortableContext items={orderedCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                <TableBody>
+                  {orderedCategories.map(c => (
+                    <SortableRow
+                      key={c.id}
+                      category={c}
+                      onEdit={(cat) => { setEditingCategory(cat); setFormOpen(true); }}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                  {orderedCategories.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                        <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        No categories yet
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </SortableContext>
+            </DndContext>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Create / Edit Dialog */}
       <Dialog open={formOpen} onOpenChange={(v) => { setFormOpen(v); if (!v) setEditingCategory(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
