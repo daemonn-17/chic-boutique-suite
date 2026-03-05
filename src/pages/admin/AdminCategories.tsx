@@ -5,6 +5,7 @@ import {
   useUpdateCategory,
   useDeleteCategory,
   useReorderCategories,
+  useUploadCategoryImage,
   type CategoryFormData,
 } from '@/hooks/useAdmin';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, FolderOpen, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, FolderOpen, GripVertical, Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   DndContext,
@@ -134,12 +135,15 @@ export default function AdminCategories() {
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
   const reorderCategories = useReorderCategories();
+  const uploadCategoryImage = useUploadCategoryImage();
   const { toast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [form, setForm] = useState<CategoryFormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
 
   const isEdit = !!editingCategory;
@@ -160,8 +164,10 @@ export default function AdminCategories() {
         display_order: editingCategory.display_order,
         is_active: editingCategory.is_active,
       });
+      setImagePreview(editingCategory.image_url || null);
     } else if (formOpen) {
       setForm({ ...EMPTY_FORM, display_order: (categories?.length || 0) });
+      setImagePreview(null);
     }
   }, [formOpen, editingCategory, categories]);
 
@@ -184,6 +190,26 @@ export default function AdminCategories() {
       onSuccess: () => toast({ title: 'Order updated' }),
       onError: (err: any) => toast({ title: 'Error reordering', description: err.message, variant: 'destructive' }),
     });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadCategoryImage.mutateAsync(file);
+      updateField('image_url', url);
+      setImagePreview(url);
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    updateField('image_url', '');
+    setImagePreview(null);
   };
 
   const updateField = <K extends keyof CategoryFormData>(key: K, value: CategoryFormData[K]) => {
@@ -305,8 +331,31 @@ export default function AdminCategories() {
               <Textarea value={form.description} onChange={e => updateField('description', e.target.value)} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>Image URL</Label>
-              <Input value={form.image_url} onChange={e => updateField('image_url', e.target.value)} placeholder="https://..." />
+              <Label>Category Image</Label>
+              {imagePreview ? (
+                <div className="relative w-full h-32 rounded-lg overflow-hidden border border-border">
+                  <img src={imagePreview} alt="Category preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors bg-muted/30">
+                  {uploading ? (
+                    <span className="text-sm text-muted-foreground">Uploading…</span>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                      <span className="text-sm text-muted-foreground">Click to upload image</span>
+                    </>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+                </label>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Display Order</Label>
