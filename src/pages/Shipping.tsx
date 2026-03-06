@@ -1,10 +1,12 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 import { Truck, Clock, MapPin, Shield } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { SEO } from '@/components/SEO';
 
 export default function Shipping() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Shipping Info' }]}>
+      <SEO title="Shipping Information | Vastra Boutique" description="Learn about Vastra Boutique's shipping options, delivery timelines, and pan-India coverage for your handcrafted garments." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Shipping Information</h1>

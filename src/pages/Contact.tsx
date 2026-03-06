@@ -1,22 +1,50 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
-import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Send, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { SEO } from '@/components/SEO';
 
 export default function Contact() {
   const [sending, setSending] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmed = {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      subject: form.subject.trim(),
+      message: form.message.trim(),
+    };
+    if (!trimmed.name || !trimmed.email || !trimmed.subject || !trimmed.message) {
+      toast({ title: 'Missing fields', description: 'Please fill in all fields.', variant: 'destructive' });
+      return;
+    }
+    if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(trimmed.email)) {
+      toast({ title: 'Invalid email', description: 'Please enter a valid email address.', variant: 'destructive' });
+      return;
+    }
     setSending(true);
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.from('contact_messages').insert(trimmed);
+      if (error) throw error;
+      toast({ title: 'Message sent!', description: "We'll get back to you within 24 hours." });
+      setForm({ name: '', email: '', subject: '', message: '' });
+    } catch {
+      toast({ title: 'Something went wrong', description: 'Please try again later.', variant: 'destructive' });
+    } finally {
       setSending(false);
-      toast.success('Message sent! We\'ll get back to you within 24 hours.');
-    }, 1000);
+    }
   };
 
   const contactInfo = [
@@ -28,6 +56,7 @@ export default function Contact() {
 
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Contact Us' }]}>
+      <SEO title="Contact Us | Vastra Boutique" description="Get in touch with Vastra Boutique. Reach us for questions about our handcrafted Indian collections, orders, or collaborations." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Get in Touch</h1>
@@ -59,13 +88,13 @@ export default function Contact() {
             <h2 className="font-serif text-2xl font-semibold mb-6">Send Us a Message</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input placeholder="Your Name" required />
-                <Input type="email" placeholder="Email Address" required />
+                <Input name="name" placeholder="Your Name" value={form.name} onChange={handleChange} required />
+                <Input name="email" type="email" placeholder="Email Address" value={form.email} onChange={handleChange} required />
               </div>
-              <Input placeholder="Subject" required />
-              <Textarea placeholder="Your message..." rows={6} required />
+              <Input name="subject" placeholder="Subject" value={form.subject} onChange={handleChange} required />
+              <Textarea name="message" placeholder="Your message..." rows={6} value={form.message} onChange={handleChange} required />
               <Button type="submit" disabled={sending} className="w-full sm:w-auto px-8">
-                <Send className="h-4 w-4 mr-2" />
+                {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                 {sending ? 'Sending...' : 'Send Message'}
               </Button>
             </form>

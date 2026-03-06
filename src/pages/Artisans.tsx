@@ -1,5 +1,6 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 import { Card, CardContent } from '@/components/ui/card';
+import { SEO } from '@/components/SEO';
 
 const crafts = [
   { name: 'Banarasi Weaving', location: 'Varanasi, Uttar Pradesh', desc: 'Gold and silver brocade weaving on silk, a tradition over 600 years old.' },
@@ -13,6 +14,7 @@ const crafts = [
 export default function Artisans() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Artisan Partners' }]}>
+      <SEO title="Artisan Partners | Vastra Boutique" description="Meet the skilled artisans behind Vastra's handcrafted collections — 500+ families preserving India's textile traditions." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Our Artisan Partners</h1>

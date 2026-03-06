@@ -1,9 +1,11 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 import { Leaf, Droplets, Recycle, Heart } from 'lucide-react';
+import { SEO } from '@/components/SEO';
 
 export default function Sustainability() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Sustainability' }]}>
+      <SEO title="Sustainability | Vastra Boutique" description="Learn about Vastra's commitment to sustainable fashion — natural fabrics, eco-friendly dyes, and fair trade practices." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Sustainability</h1>

@@ -1,5 +1,6 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 import { Card, CardContent } from '@/components/ui/card';
+import { SEO } from '@/components/SEO';
 
 const pressItems = [
   { outlet: 'Vogue India', date: 'January 2024', title: '"Vastra Boutique: Reviving India\'s Handloom Heritage for the Modern Woman"' },
@@ -12,6 +13,7 @@ const pressItems = [
 export default function Press() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Press' }]}>
+      <SEO title="Press & Media | Vastra Boutique" description="Vastra Boutique in the news — featured by Vogue India, Elle, Forbes, and more leading publications." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Press & Media</h1>

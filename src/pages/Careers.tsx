@@ -2,6 +2,7 @@ import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SEO } from '@/components/SEO';
 
 const openings = [
   { title: 'Senior Fashion Designer', location: 'Mumbai', type: 'Full-time', desc: 'Lead our design team in creating contemporary Indian wear collections.' },
@@ -13,6 +14,7 @@ const openings = [
 export default function Careers() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Careers' }]}>
+      <SEO title="Careers | Vastra Boutique" description="Join the Vastra team and help preserve India's textile heritage. Explore open positions in design, marketing, and more." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Careers at Vastra</h1>
