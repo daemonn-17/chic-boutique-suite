@@ -1,8 +1,10 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
+import { SEO } from '@/components/SEO';
 
 export default function Terms() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Terms of Service' }]}>
+      <SEO title="Terms of Service | Vastra Boutique" description="Read the terms and conditions for using Vastra Boutique's website and services." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Terms of Service</h1>

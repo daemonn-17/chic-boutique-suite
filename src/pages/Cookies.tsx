@@ -1,8 +1,10 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
+import { SEO } from '@/components/SEO';
 
 export default function Cookies() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Cookie Policy' }]}>
+      <SEO title="Cookie Policy | Vastra Boutique" description="Understand how Vastra Boutique uses cookies to enhance your browsing experience." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Cookie Policy</h1>

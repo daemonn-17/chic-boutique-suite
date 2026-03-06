@@ -1,5 +1,6 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { SEO } from '@/components/SEO';
 
 const faqs = [
   {
@@ -41,6 +42,7 @@ const faqs = [
 export default function FAQ() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'FAQs' }]}>
+      <SEO title="FAQs | Vastra Boutique" description="Find answers to frequently asked questions about Vastra Boutique orders, shipping, returns, payments, and product care." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Frequently Asked Questions</h1>

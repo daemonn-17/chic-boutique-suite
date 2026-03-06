@@ -1,9 +1,11 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 import { RotateCcw, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
+import { SEO } from '@/components/SEO';
 
 export default function Returns() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Returns & Exchange' }]}>
+      <SEO title="Returns & Exchanges | Vastra Boutique" description="Hassle-free returns within 7 days. Learn about our return eligibility, exchange policy, and refund process." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Returns & Exchanges</h1>

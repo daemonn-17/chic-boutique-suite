@@ -1,8 +1,10 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
+import { SEO } from '@/components/SEO';
 
 export default function OurStory() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Our Story' }]}>
+      <SEO title="Our Story | Vastra Boutique" description="From a single Banarasi saree to India's beloved boutique — discover the journey of Vastra Boutique." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Our Story</h1>

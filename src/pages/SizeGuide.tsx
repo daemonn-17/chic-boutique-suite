@@ -1,5 +1,6 @@
 import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SEO } from '@/components/SEO';
 
 const sizeData = {
   sarees: { note: 'Standard saree length is 5.5 meters with a 0.8-meter blouse piece.', sizes: [] as any[] },
@@ -27,6 +28,7 @@ const sizeData = {
 export default function SizeGuide() {
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Size Guide' }]}>
+      <SEO title="Size Guide | Vastra Boutique" description="Find your perfect fit with our detailed size charts for kurtis, lehengas, and sarees. All measurements in inches." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Size Guide</h1>

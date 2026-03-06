@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { SEO } from '@/components/SEO';
 
 export default function TrackOrder() {
   const [orderNumber, setOrderNumber] = useState('');
@@ -22,6 +23,7 @@ export default function TrackOrder() {
 
   return (
     <InfoPageLayout breadcrumbs={[{ label: 'Track Order' }]}>
+      <SEO title="Track Your Order | Vastra Boutique" description="Track your Vastra Boutique order status in real-time. Enter your order number to check delivery progress." />
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Track Your Order</h1>
