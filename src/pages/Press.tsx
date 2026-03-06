@@ -11,7 +11,7 @@ const pressItems = [
 
 export default function Press() {
   return (
-    <InfoPageLayout>
+    <InfoPageLayout breadcrumbs={[{ label: 'Press' }]}>
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Press & Media</h1>
