@@ -2,7 +2,7 @@ import { InfoPageLayout } from '@/components/layout/InfoPageLayout';
 
 export default function Privacy() {
   return (
-    <InfoPageLayout>
+    <InfoPageLayout breadcrumbs={[{ label: 'Privacy Policy' }]}>
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">Privacy Policy</h1>

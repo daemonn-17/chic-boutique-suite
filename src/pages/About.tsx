@@ -3,7 +3,7 @@ import { Heart, Award, Users, Sparkles } from 'lucide-react';
 
 export default function About() {
   return (
-    <InfoPageLayout>
+    <InfoPageLayout breadcrumbs={[{ label: 'About Us' }]}>
       <section className="bg-primary/5 py-16 md:py-24">
         <div className="container-boutique text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground mb-4">About Vastra Boutique</h1>
