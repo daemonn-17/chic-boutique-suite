@@ -259,6 +259,7 @@ export default function AdminMessages() {
               </Table>
             </div>
             </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
