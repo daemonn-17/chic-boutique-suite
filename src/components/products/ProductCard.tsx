@@ -6,7 +6,7 @@ import { Product } from '@/types/product';
 import { formatPrice } from '@/hooks/useProducts';
 import { getColorHex } from '@/lib/productUtils';
 import { useCartStore } from '@/store/cartStore';
-import { useWishlistStore } from '@/store/wishlistStore';
+import { useWishlist } from '@/hooks/useWishlist';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
