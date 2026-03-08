@@ -68,7 +68,7 @@ function StarDisplay({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'x
           className={cn(
             w,
             i <= Math.round(rating)
-              ? 'text-yellow-500 fill-yellow-500'
+              ? 'text-amber-500 fill-amber-500'
               : 'text-muted fill-muted'
           )}
         />
