@@ -22,6 +22,7 @@ const navItems = [
   { title: 'Orders', url: '/admin/orders', icon: ShoppingCart },
   { title: 'Inventory', url: '/admin/inventory', icon: Warehouse },
   { title: 'Messages', url: '/admin/messages', icon: MessageSquare },
+  { title: 'Coupons', url: '/admin/coupons', icon: Ticket },
 ];
 
 export function AdminSidebar() {
