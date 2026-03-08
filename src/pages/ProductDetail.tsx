@@ -50,7 +50,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
 
   const { addItem, openCart } = useCartStore();
-  const { isInWishlist, toggleItem } = useWishlistStore();
+  const { isInWishlist, toggleItem } = useWishlist();
 
   const isWishlisted = product ? isInWishlist(product.id) : false;
 

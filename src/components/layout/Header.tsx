@@ -21,10 +21,9 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { openCart, getItemCount } = useCartStore();
-  const { items: wishlistItems } = useWishlistStore();
+  const { itemCount: wishlistCount } = useWishlist();
 
   const cartCount = getItemCount();
-  const wishlistCount = wishlistItems.length;
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">

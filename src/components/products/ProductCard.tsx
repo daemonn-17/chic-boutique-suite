@@ -16,7 +16,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { addItem, openCart } = useCartStore();
-  const { isInWishlist, toggleItem } = useWishlistStore();
+  const { isInWishlist, toggleItem } = useWishlist();
 
   const isWishlisted = isInWishlist(product.id);
   const primaryImage = product.images.find((img) => img.isPrimary) || product.images[0];
