@@ -25,7 +25,7 @@ import { useProduct, useSimilarProducts, formatPrice } from '@/hooks/useProducts
 import { transformDbProduct } from '@/lib/productUtils';
 import { getColorHex } from '@/lib/productUtils';
 import { useCartStore } from '@/store/cartStore';
-import { useWishlistStore } from '@/store/wishlistStore';
+import { useWishlist } from '@/hooks/useWishlist';
 import { cn } from '@/lib/utils';
 import { ProductReviews } from '@/components/products/ProductReviews';
 
