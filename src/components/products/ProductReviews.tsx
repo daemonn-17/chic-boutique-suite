@@ -48,7 +48,7 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (v: num
             className={cn(
               'w-6 h-6 transition-colors',
               (hover || value) >= star
-                ? 'text-yellow-500 fill-yellow-500'
+                ? 'text-amber-500 fill-amber-500'
                 : 'text-muted'
             )}
           />
