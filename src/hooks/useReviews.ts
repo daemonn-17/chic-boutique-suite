@@ -20,23 +20,30 @@ export function useProductReviews(productId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reviews')
-        .select('*, profiles!reviews_user_id_fkey(full_name)')
+        .select('*')
         .eq('product_id', productId)
         .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        // Fallback without join if FK doesn't exist
-        const { data: fallback, error: err2 } = await supabase
-          .from('reviews')
-          .select('*')
-          .eq('product_id', productId)
-          .eq('is_approved', true)
-          .order('created_at', { ascending: false });
-        if (err2) throw err2;
-        return (fallback || []).map(r => ({ ...r, profiles: null })) as DbReview[];
+      if (error) throw error;
+
+      // Fetch profile names for reviewers
+      const userIds = [...new Set((data || []).map(r => r.user_id))];
+      let profileMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+        if (profiles) {
+          profileMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name || 'Customer']));
+        }
       }
-      return (data || []) as DbReview[];
+
+      return (data || []).map(r => ({
+        ...r,
+        profiles: { full_name: profileMap[r.user_id] || null },
+      })) as DbReview[];
     },
     enabled: !!productId,
   });

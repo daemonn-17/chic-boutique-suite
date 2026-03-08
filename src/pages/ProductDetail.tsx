@@ -27,6 +27,7 @@ import { getColorHex } from '@/lib/productUtils';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { cn } from '@/lib/utils';
+import { ProductReviews } from '@/components/products/ProductReviews';
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
