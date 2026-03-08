@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart, Warehouse, FolderOpen, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Warehouse, FolderOpen, ArrowLeft, MessageSquare } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation, Link } from 'react-router-dom';
 import {
@@ -21,6 +21,7 @@ const navItems = [
   { title: 'Categories', url: '/admin/categories', icon: FolderOpen },
   { title: 'Orders', url: '/admin/orders', icon: ShoppingCart },
   { title: 'Inventory', url: '/admin/inventory', icon: Warehouse },
+  { title: 'Messages', url: '/admin/messages', icon: MessageSquare },
 ];
 
 export function AdminSidebar() {
