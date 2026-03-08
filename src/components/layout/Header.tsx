@@ -5,7 +5,7 @@ import { Search, Heart, ShoppingBag, User, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCartStore } from '@/store/cartStore';
-import { useWishlistStore } from '@/store/wishlistStore';
+import { useWishlist } from '@/hooks/useWishlist';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
