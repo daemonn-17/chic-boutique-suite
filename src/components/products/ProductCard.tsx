@@ -6,7 +6,7 @@ import { Product } from '@/types/product';
 import { formatPrice } from '@/hooks/useProducts';
 import { getColorHex } from '@/lib/productUtils';
 import { useCartStore } from '@/store/cartStore';
-import { useWishlistStore } from '@/store/wishlistStore';
+import { useWishlist } from '@/hooks/useWishlist';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
@@ -16,7 +16,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { addItem, openCart } = useCartStore();
-  const { isInWishlist, toggleItem } = useWishlistStore();
+  const { isInWishlist, toggleItem } = useWishlist();
 
   const isWishlisted = isInWishlist(product.id);
   const primaryImage = product.images.find((img) => img.isPrimary) || product.images[0];
