@@ -281,7 +281,7 @@ export function ProductReviews({ productId, productName }: Props) {
                       {review.profiles?.full_name || 'Customer'}
                     </span>
                     {review.order_id && (
-                      <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                         <CheckCircle className="w-3 h-3" /> Verified Purchase
                       </span>
                     )}
