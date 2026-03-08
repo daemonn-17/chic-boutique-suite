@@ -21,6 +21,7 @@ const navItems = [
   { title: 'Categories', url: '/admin/categories', icon: FolderOpen },
   { title: 'Orders', url: '/admin/orders', icon: ShoppingCart },
   { title: 'Inventory', url: '/admin/inventory', icon: Warehouse },
+  { title: 'Messages', url: '/admin/messages', icon: MessageSquare },
 ];
 
 export function AdminSidebar() {
