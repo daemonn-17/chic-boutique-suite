@@ -38,6 +38,7 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminInventory from "./pages/admin/AdminInventory";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminCoupons from "./pages/admin/AdminCoupons";
 
 const queryClient = new QueryClient();
 
