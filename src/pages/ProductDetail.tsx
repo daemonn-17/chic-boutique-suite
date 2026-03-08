@@ -464,6 +464,9 @@ export default function ProductDetailPage() {
             </motion.div>
           </div>
 
+          {/* Product Reviews */}
+          <ProductReviews productId={product.id} productName={product.name} />
+
           {/* Similar Products */}
           {similarProducts.length > 0 && (
             <section className="mt-20">
