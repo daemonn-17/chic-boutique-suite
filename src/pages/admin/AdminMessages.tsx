@@ -205,7 +205,34 @@ export default function AdminMessages() {
           ) : !subscribers?.length ? (
             <p className="text-center py-12 text-muted-foreground">No subscribers yet.</p>
           ) : (
-            <div className="rounded-md border">
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const csv = ['Email,Status,Subscribed Date']
+                      .concat(
+                        subscribers.map(
+                          (s) =>
+                            `${s.email},${s.is_active ? 'Active' : 'Inactive'},${format(new Date(s.subscribed_at), 'yyyy-MM-dd')}`
+                        )
+                      )
+                      .join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `subscribers-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+              </div>
+              <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
